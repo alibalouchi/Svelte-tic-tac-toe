@@ -570,9 +570,6 @@ var app = (function () {
           winner[1] == "Main" ? indexes.push([0, dimension + 1, 2 * (dimension + 1)]) 
             : indexes.push([dimension - 1, (dimension - 1) * 2, (dimension - 1) * 3]);
             return indexes[0]
-        }else if (winner[0] == "Draw"){
-          indexes.push(board.map((item, index) => index));
-          return indexes[0]
         }
         return indexes
       }
