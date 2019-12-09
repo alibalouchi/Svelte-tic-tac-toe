@@ -24,6 +24,9 @@ var app = (function () {
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
     }
+    function null_to_empty(value) {
+        return value == null ? '' : value;
+    }
 
     function append(target, node) {
         target.appendChild(node);
@@ -342,6 +345,7 @@ var app = (function () {
     	let main;
     	let div;
     	let t;
+    	let div_class_value;
     	let dispose;
 
     	const block = {
@@ -349,10 +353,10 @@ var app = (function () {
     			main = element("main");
     			div = element("div");
     			t = text(/*value*/ ctx[0]);
-    			attr_dev(div, "class", "svelte-5lc7kj");
-    			add_location(div, file, 15, 4, 284);
-    			add_location(main, file, 14, 0, 272);
-    			dispose = listen_dev(div, "click", /*handleSquareClick*/ ctx[1], false, false, false);
+    			attr_dev(div, "class", div_class_value = "" + (null_to_empty(/*className*/ ctx[1] ? "winner" : "") + " svelte-wprve0"));
+    			add_location(div, file, 16, 4, 312);
+    			add_location(main, file, 15, 0, 300);
+    			dispose = listen_dev(div, "click", /*handleSquareClick*/ ctx[2], false, false, false);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -364,6 +368,10 @@ var app = (function () {
     		},
     		p: function update(ctx, [dirty]) {
     			if (dirty & /*value*/ 1) set_data_dev(t, /*value*/ ctx[0]);
+
+    			if (dirty & /*className*/ 2 && div_class_value !== (div_class_value = "" + (null_to_empty(/*className*/ ctx[1] ? "winner" : "") + " svelte-wprve0"))) {
+    				attr_dev(div, "class", div_class_value);
+    			}
     		},
     		i: noop,
     		o: noop,
@@ -387,13 +395,14 @@ var app = (function () {
     function instance($$self, $$props, $$invalidate) {
     	let { value } = $$props;
     	let { id } = $$props;
+    	let { className } = $$props;
     	const dispatch = createEventDispatcher();
 
     	const handleSquareClick = () => {
     		dispatch("clicked", { id });
     	};
 
-    	const writable_props = ["value", "id"];
+    	const writable_props = ["value", "id", "className"];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== "$$") console.warn(`<Square> was created with unknown prop '${key}'`);
@@ -401,25 +410,27 @@ var app = (function () {
 
     	$$self.$set = $$props => {
     		if ("value" in $$props) $$invalidate(0, value = $$props.value);
-    		if ("id" in $$props) $$invalidate(2, id = $$props.id);
+    		if ("id" in $$props) $$invalidate(3, id = $$props.id);
+    		if ("className" in $$props) $$invalidate(1, className = $$props.className);
     	};
 
     	$$self.$capture_state = () => {
-    		return { value, id };
+    		return { value, id, className };
     	};
 
     	$$self.$inject_state = $$props => {
     		if ("value" in $$props) $$invalidate(0, value = $$props.value);
-    		if ("id" in $$props) $$invalidate(2, id = $$props.id);
+    		if ("id" in $$props) $$invalidate(3, id = $$props.id);
+    		if ("className" in $$props) $$invalidate(1, className = $$props.className);
     	};
 
-    	return [value, handleSquareClick, id];
+    	return [value, className, handleSquareClick, id];
     }
 
     class Square extends SvelteComponentDev {
     	constructor(options) {
     		super(options);
-    		init(this, options, instance, create_fragment, safe_not_equal, { value: 0, id: 2 });
+    		init(this, options, instance, create_fragment, safe_not_equal, { value: 0, id: 3, className: 1 });
 
     		dispatch_dev("SvelteRegisterComponent", {
     			component: this,
@@ -435,8 +446,12 @@ var app = (function () {
     			console.warn("<Square> was created without expected prop 'value'");
     		}
 
-    		if (/*id*/ ctx[2] === undefined && !("id" in props)) {
+    		if (/*id*/ ctx[3] === undefined && !("id" in props)) {
     			console.warn("<Square> was created without expected prop 'id'");
+    		}
+
+    		if (/*className*/ ctx[1] === undefined && !("className" in props)) {
+    			console.warn("<Square> was created without expected prop 'className'");
     		}
     	}
 
@@ -453,6 +468,14 @@ var app = (function () {
     	}
 
     	set id(value) {
+    		throw new Error("<Square>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	get className() {
+    		throw new Error("<Square>: Props cannot be read directly from the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
+    	}
+
+    	set className(value) {
     		throw new Error("<Square>: Props cannot be set directly on the component instance unless compiling with 'accessors: true' or '<svelte:options accessors/>'");
     	}
     }
@@ -515,7 +538,7 @@ var app = (function () {
         return [xMainDia, oMainDia, xSubDia, oSubDia];
       }
 
-    function checkWiner(board) {
+    function checkWinner(board) {
         let xIndex = indexFinder(board)[0];
         let oIndex = indexFinder(board)[1];
         let xRow = checkX(board)[1];
@@ -523,18 +546,35 @@ var app = (function () {
         let oColumn = checkO(board)[0];
         let xColumn = checkX(board)[0];
 
-        if (oRow.find(item => item == 3) || oColumn.find(item => item == 3)) return "O"
-        if (xRow.find(item => item == 3) || xColumn.find(item => item == 3)) return "X"
+        let winner = 0;
+        let indexes = [];
+
+        oRow.filter((item, index) => {if(item == 3) winner = ["O" , "row", index];});
+        oColumn.filter((item, index) => {if(item == 3) winner = ["O", "column", index];});
+        xRow.filter((item, index) => {if(item == 3) winner = ["X", "row", index];});
+        xColumn.filter((item, index) => {if(item == 3) winner = ["X", "column", index];});
         
         let Dias = makeDias(board);
-        if (Dias[0] == 3) return "X";
-        if (Dias[1] == 3) return "O";
-        if (Dias[2] == 3) return "X";
-        if (Dias[3] == 3) return "O";
+        if (Dias[0] == 3) winner = ["X", "Main"];
+        if (Dias[1] == 3) winner = ["O", "Main"];
+        if (Dias[2] == 3) winner = ["X", "Sub"];
+        if (Dias[3] == 3) winner = ["O", "Sub"];
 
-        if (xIndex.length + oIndex.length == 9) return "D";
+        if (xIndex.length + oIndex.length == 9) winner = ["Draw"];
 
-        return 'X' | 'O' | 'D' | null
+        if (winner.length == 3){
+          winner[1] == "row" ? indexes.push([winner[2] * dimension, (winner[2] * dimension) + 1, (winner[2] * dimension) + 2]) 
+            : indexes.push([winner[2], winner[2] + dimension, winner[2] + (2 * dimension)]);
+            return indexes[0]
+        }else if (winner.length == 2){
+          winner[1] == "Main" ? indexes.push([0, dimension + 1, 2 * (dimension + 1)]) 
+            : indexes.push([dimension - 1, (dimension - 1) * 2, (dimension - 1) * 3]);
+            return indexes[0]
+        }else if (winner[0] == "Draw"){
+          indexes.push(board.map((item, index) => index));
+          return indexes[0]
+        }
+        return indexes
       }
 
     /* src\components\Board.svelte generated by Svelte v3.16.0 */
@@ -542,6 +582,7 @@ var app = (function () {
 
     function create_fragment$1(ctx) {
     	let main;
+    	let div3;
     	let div0;
     	let t0;
     	let t1;
@@ -553,101 +594,114 @@ var app = (function () {
     	let div2;
     	let t6;
     	let t7;
+    	let t8;
+    	let button;
     	let current;
+    	let dispose;
 
     	const square0 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][0],
     				id: "0",
     				value: /*board*/ ctx[0][0] ? /*board*/ ctx[0][0] : ""
     			},
     			$$inline: true
     		});
 
-    	square0.$on("clicked", /*handleClick*/ ctx[1]);
+    	square0.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square1 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][1],
     				id: "1",
     				value: /*board*/ ctx[0][1] ? /*board*/ ctx[0][1] : ""
     			},
     			$$inline: true
     		});
 
-    	square1.$on("clicked", /*handleClick*/ ctx[1]);
+    	square1.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square2 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][2],
     				id: "2",
     				value: /*board*/ ctx[0][2] ? /*board*/ ctx[0][2] : ""
     			},
     			$$inline: true
     		});
 
-    	square2.$on("clicked", /*handleClick*/ ctx[1]);
+    	square2.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square3 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][3],
     				id: "3",
     				value: /*board*/ ctx[0][3] ? /*board*/ ctx[0][3] : ""
     			},
     			$$inline: true
     		});
 
-    	square3.$on("clicked", /*handleClick*/ ctx[1]);
+    	square3.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square4 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][4],
     				id: "4",
     				value: /*board*/ ctx[0][4] ? /*board*/ ctx[0][4] : ""
     			},
     			$$inline: true
     		});
 
-    	square4.$on("clicked", /*handleClick*/ ctx[1]);
+    	square4.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square5 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][5],
     				id: "5",
     				value: /*board*/ ctx[0][5] ? /*board*/ ctx[0][5] : ""
     			},
     			$$inline: true
     		});
 
-    	square5.$on("clicked", /*handleClick*/ ctx[1]);
+    	square5.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square6 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][6],
     				id: "6",
     				value: /*board*/ ctx[0][6] ? /*board*/ ctx[0][6] : ""
     			},
     			$$inline: true
     		});
 
-    	square6.$on("clicked", /*handleClick*/ ctx[1]);
+    	square6.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square7 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][7],
     				id: "7",
     				value: /*board*/ ctx[0][7] ? /*board*/ ctx[0][7] : ""
     			},
     			$$inline: true
     		});
 
-    	square7.$on("clicked", /*handleClick*/ ctx[1]);
+    	square7.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const square8 = new Square({
     			props: {
+    				className: /*winColor*/ ctx[1][8],
     				id: "8",
     				value: /*board*/ ctx[0][8] ? /*board*/ ctx[0][8] : ""
     			},
     			$$inline: true
     		});
 
-    	square8.$on("clicked", /*handleClick*/ ctx[1]);
+    	square8.$on("clicked", /*handleClick*/ ctx[2]);
 
     	const block = {
     		c: function create() {
     			main = element("main");
+    			div3 = element("div");
     			div0 = element("div");
     			create_component(square0.$$.fragment);
     			t0 = space();
@@ -668,67 +722,87 @@ var app = (function () {
     			create_component(square7.$$.fragment);
     			t7 = space();
     			create_component(square8.$$.fragment);
-    			attr_dev(div0, "class", "row svelte-128oyq2");
-    			add_location(div0, file$1, 19, 1, 500);
-    			attr_dev(div1, "class", "row svelte-128oyq2");
-    			add_location(div1, file$1, 24, 1, 766);
-    			attr_dev(div2, "class", "row svelte-128oyq2");
-    			add_location(div2, file$1, 29, 1, 1032);
-    			add_location(main, file$1, 18, 0, 491);
+    			t8 = space();
+    			button = element("button");
+    			button.textContent = "Reset The Game";
+    			attr_dev(div0, "class", "row svelte-1dkw49o");
+    			add_location(div0, file$1, 25, 1, 673);
+    			attr_dev(div1, "class", "row svelte-1dkw49o");
+    			add_location(div1, file$1, 30, 1, 1011);
+    			attr_dev(div2, "class", "row svelte-1dkw49o");
+    			add_location(div2, file$1, 35, 1, 1349);
+    			attr_dev(button, "class", "svelte-1dkw49o");
+    			add_location(button, file$1, 40, 1, 1687);
+    			attr_dev(div3, "class", "container svelte-1dkw49o");
+    			add_location(div3, file$1, 24, 0, 647);
+    			add_location(main, file$1, 23, 0, 639);
+    			dispose = listen_dev(button, "click", /*handleReset*/ ctx[3], false, false, false);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, main, anchor);
-    			append_dev(main, div0);
+    			append_dev(main, div3);
+    			append_dev(div3, div0);
     			mount_component(square0, div0, null);
     			append_dev(div0, t0);
     			mount_component(square1, div0, null);
     			append_dev(div0, t1);
     			mount_component(square2, div0, null);
-    			append_dev(main, t2);
-    			append_dev(main, div1);
+    			append_dev(div3, t2);
+    			append_dev(div3, div1);
     			mount_component(square3, div1, null);
     			append_dev(div1, t3);
     			mount_component(square4, div1, null);
     			append_dev(div1, t4);
     			mount_component(square5, div1, null);
-    			append_dev(main, t5);
-    			append_dev(main, div2);
+    			append_dev(div3, t5);
+    			append_dev(div3, div2);
     			mount_component(square6, div2, null);
     			append_dev(div2, t6);
     			mount_component(square7, div2, null);
     			append_dev(div2, t7);
     			mount_component(square8, div2, null);
+    			append_dev(div3, t8);
+    			append_dev(div3, button);
     			current = true;
     		},
     		p: function update(ctx, [dirty]) {
     			const square0_changes = {};
+    			if (dirty & /*winColor*/ 2) square0_changes.className = /*winColor*/ ctx[1][0];
     			if (dirty & /*board*/ 1) square0_changes.value = /*board*/ ctx[0][0] ? /*board*/ ctx[0][0] : "";
     			square0.$set(square0_changes);
     			const square1_changes = {};
+    			if (dirty & /*winColor*/ 2) square1_changes.className = /*winColor*/ ctx[1][1];
     			if (dirty & /*board*/ 1) square1_changes.value = /*board*/ ctx[0][1] ? /*board*/ ctx[0][1] : "";
     			square1.$set(square1_changes);
     			const square2_changes = {};
+    			if (dirty & /*winColor*/ 2) square2_changes.className = /*winColor*/ ctx[1][2];
     			if (dirty & /*board*/ 1) square2_changes.value = /*board*/ ctx[0][2] ? /*board*/ ctx[0][2] : "";
     			square2.$set(square2_changes);
     			const square3_changes = {};
+    			if (dirty & /*winColor*/ 2) square3_changes.className = /*winColor*/ ctx[1][3];
     			if (dirty & /*board*/ 1) square3_changes.value = /*board*/ ctx[0][3] ? /*board*/ ctx[0][3] : "";
     			square3.$set(square3_changes);
     			const square4_changes = {};
+    			if (dirty & /*winColor*/ 2) square4_changes.className = /*winColor*/ ctx[1][4];
     			if (dirty & /*board*/ 1) square4_changes.value = /*board*/ ctx[0][4] ? /*board*/ ctx[0][4] : "";
     			square4.$set(square4_changes);
     			const square5_changes = {};
+    			if (dirty & /*winColor*/ 2) square5_changes.className = /*winColor*/ ctx[1][5];
     			if (dirty & /*board*/ 1) square5_changes.value = /*board*/ ctx[0][5] ? /*board*/ ctx[0][5] : "";
     			square5.$set(square5_changes);
     			const square6_changes = {};
+    			if (dirty & /*winColor*/ 2) square6_changes.className = /*winColor*/ ctx[1][6];
     			if (dirty & /*board*/ 1) square6_changes.value = /*board*/ ctx[0][6] ? /*board*/ ctx[0][6] : "";
     			square6.$set(square6_changes);
     			const square7_changes = {};
+    			if (dirty & /*winColor*/ 2) square7_changes.className = /*winColor*/ ctx[1][7];
     			if (dirty & /*board*/ 1) square7_changes.value = /*board*/ ctx[0][7] ? /*board*/ ctx[0][7] : "";
     			square7.$set(square7_changes);
     			const square8_changes = {};
+    			if (dirty & /*winColor*/ 2) square8_changes.className = /*winColor*/ ctx[1][8];
     			if (dirty & /*board*/ 1) square8_changes.value = /*board*/ ctx[0][8] ? /*board*/ ctx[0][8] : "";
     			square8.$set(square8_changes);
     		},
@@ -768,6 +842,7 @@ var app = (function () {
     			destroy_component(square6);
     			destroy_component(square7);
     			destroy_component(square8);
+    			dispose();
     		}
     	};
 
@@ -785,21 +860,22 @@ var app = (function () {
     function instance$1($$self, $$props, $$invalidate) {
     	let xTurn = false;
     	let board = Array(9).fill(null);
+    	let indexes = checkWinner(board);
+    	let winColor = Array(9).fill(false);
 
     	const handleClick = event => {
     		let id = event.detail.id;
     		if (board[id]) return;
+    		if (winColor.find(item => item == true)) return;
     		$$invalidate(0, board[id] = xTurn ? "X" : "O", board);
     		xTurn = !xTurn;
-    		let winner = checkWiner(board);
+    		indexes = checkWinner(board);
+    		indexes.map(item => $$invalidate(1, winColor[item] = true, winColor));
+    	};
 
-    		if (winner) {
-    			winner == "D"
-    			? alert("Draw")
-    			: alert(`${winner} has won the game`);
-
-    			$$invalidate(0, board = Array(9).fill(null));
-    		}
+    	const handleReset = () => {
+    		$$invalidate(0, board = Array(9).fill(null));
+    		$$invalidate(1, winColor = Array(9).fill(false));
     	};
 
     	$$self.$capture_state = () => {
@@ -809,9 +885,11 @@ var app = (function () {
     	$$self.$inject_state = $$props => {
     		if ("xTurn" in $$props) xTurn = $$props.xTurn;
     		if ("board" in $$props) $$invalidate(0, board = $$props.board);
+    		if ("indexes" in $$props) indexes = $$props.indexes;
+    		if ("winColor" in $$props) $$invalidate(1, winColor = $$props.winColor);
     	};
 
-    	return [board, handleClick];
+    	return [board, winColor, handleClick, handleReset];
     }
 
     class Board extends SvelteComponentDev {

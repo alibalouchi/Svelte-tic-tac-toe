@@ -56,7 +56,7 @@ export function makeDias(board){
     return [xMainDia, oMainDia, xSubDia, oSubDia];
   }
 
-export function checkWiner(board) {
+export function checkWinner(board) {
     let xIndex = indexFinder(board)[0];
     let oIndex = indexFinder(board)[1];
     let xRow = checkX(board)[1];
@@ -64,16 +64,33 @@ export function checkWiner(board) {
     let oColumn = checkO(board)[0];
     let xColumn = checkX(board)[0];
 
-    if (oRow.find(item => item == 3) || oColumn.find(item => item == 3)) return "O"
-    if (xRow.find(item => item == 3) || xColumn.find(item => item == 3)) return "X"
+    let winner = 0
+    let indexes = []
+
+    oRow.filter((item, index) => {if(item == 3) winner = ["O" , "row", index]})
+    oColumn.filter((item, index) => {if(item == 3) winner = ["O", "column", index]})
+    xRow.filter((item, index) => {if(item == 3) winner = ["X", "row", index]})
+    xColumn.filter((item, index) => {if(item == 3) winner = ["X", "column", index]})
     
     let Dias = makeDias(board);
-    if (Dias[0] == 3) return "X";
-    if (Dias[1] == 3) return "O";
-    if (Dias[2] == 3) return "X";
-    if (Dias[3] == 3) return "O";
+    if (Dias[0] == 3) winner = ["X", "Main"];
+    if (Dias[1] == 3) winner = ["O", "Main"];
+    if (Dias[2] == 3) winner = ["X", "Sub"];
+    if (Dias[3] == 3) winner = ["O", "Sub"];
 
-    if (xIndex.length + oIndex.length == 9) return "D";
+    if (xIndex.length + oIndex.length == 9) winner = ["Draw"];
 
-    return 'X' | 'O' | 'D' | null
+    if (winner.length == 3){
+      winner[1] == "row" ? indexes.push([winner[2] * dimension, (winner[2] * dimension) + 1, (winner[2] * dimension) + 2]) 
+        : indexes.push([winner[2], winner[2] + dimension, winner[2] + (2 * dimension)])
+        return indexes[0]
+    }else if (winner.length == 2){
+      winner[1] == "Main" ? indexes.push([0, dimension + 1, 2 * (dimension + 1)]) 
+        : indexes.push([dimension - 1, (dimension - 1) * 2, (dimension - 1) * 3])
+        return indexes[0]
+    }else if (winner[0] == "Draw"){
+      indexes.push(board.map((item, index) => index))
+      return indexes[0]
+    }
+    return indexes
   }

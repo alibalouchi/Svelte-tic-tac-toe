@@ -2,18 +2,19 @@
     import {createEventDispatcher} from 'svelte'
     export let value;
     export let id;
+    export let className;
 
     const dispatch = createEventDispatcher();
 
     const handleSquareClick = () => {
         dispatch('clicked', {
             id
-        })
+        });
     }
 </script>
 
 <main>
-    <div on:click={handleSquareClick}>{value}</div>
+    <div class={className ? "winner" : ""} on:click={handleSquareClick}>{value}</div>
 </main>
 
 <style>
@@ -29,5 +30,9 @@
 
     div:hover {
         background-color: grey;
+    }
+
+    .winner {
+        background-color: green;
     }
 </style>
