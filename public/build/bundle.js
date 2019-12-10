@@ -560,7 +560,7 @@ var app = (function () {
         if (Dias[2] == 3) winner = ["X", "Sub"];
         if (Dias[3] == 3) winner = ["O", "Sub"];
 
-        if (xIndex.length + oIndex.length == 9) winner = ["Draw"];
+        // if (xIndex.length + oIndex.length == 9) winner = ["Draw"];
 
         if (winner.length == 3){
           winner[1] == "row" ? indexes.push([winner[2] * dimension, (winner[2] * dimension) + 1, (winner[2] * dimension) + 2]) 
